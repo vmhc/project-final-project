@@ -4,7 +4,6 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -44,8 +43,46 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void tellJoke(View view) {
-        startActivity(JokerActivity.newIntent(this, JokerMain.randomJoker()));
+    //    new EndpointsAsyncTask().execute(new Pair<Context, String>(this, "Manfred"));
+       startActivity(JokerActivity.newIntent(this, JokerMain.randomJoker()));
     }
+
+   /* static class EndpointsAsyncTask extends AsyncTask<Pair<Context, String>, Void, String> {
+        private static MyApi myApiService = null;
+        private Context context;
+
+        @Override
+        protected String doInBackground(Pair<Context, String>... params) {
+            if(myApiService == null) {  // Only do this once
+                MyApi.Builder builder = new MyApi.Builder(AndroidHttp.newCompatibleTransport(),
+                        new AndroidJsonFactory(), null)
+                        .setRootUrl("http://127.0.0.0:8080/_ah/api/")
+                        .setGoogleClientRequestInitializer(new GoogleClientRequestInitializer() {
+                            @Override
+                            public void initialize(AbstractGoogleClientRequest<?> abstractGoogleClientRequest) throws IOException {
+                                abstractGoogleClientRequest.setDisableGZipContent(true);
+                            }
+                        });
+                // end options for devappserver
+
+                myApiService = builder.build();
+            }
+
+            context = params[0].first;
+            String name = params[0].second;
+
+            try {
+                return myApiService.sayHi(name).execute().getData();
+            } catch (IOException e) {
+                return e.getMessage();
+            }
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            Toast.makeText(context, result, Toast.LENGTH_LONG).show();
+        }
+    }*/
 
 
 }
