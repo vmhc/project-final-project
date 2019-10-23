@@ -1,24 +1,56 @@
 package com.udacity.gradle.builditbigger;
 
+import android.content.Context;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
 
+import androidx.annotation.Nullable;
+import androidx.annotation.VisibleForTesting;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.util.Pair;
+import androidx.test.espresso.IdlingResource;
 
-import com.android.jokerstore.JokerMain;
-import com.android.showjoker.JokerActivity;
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.extensions.android.json.AndroidJsonFactory;
+import com.google.api.client.googleapis.services.AbstractGoogleClientRequest;
+import com.google.api.client.googleapis.services.GoogleClientRequestInitializer;
+import com.udacity.gradle.builditbigger.IdlingResource.ITestingCallbacks;
+import com.udacity.gradle.builditbigger.IdlingResource.SimpleIdlingResource;
+import com.udacity.gradle.builditbigger.backend.myApi.MyApi;
+
+import java.io.IOException;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ITestingCallbacks {
+
+    @Nullable
+    private SimpleIdlingResource mIdlingResource;
+
+    private ITestingCallbacks iTestingCallbacks;
+    private TextView tv_request_joker;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        tv_request_joker = findViewById(R.id.tv_request_joker);
+        iTestingCallbacks = this;
+        getIdlingResource();
     }
 
+    @VisibleForTesting
+    @Nullable
+    public IdlingResource getIdlingResource() {
+        if (mIdlingResource == null) {
+            mIdlingResource = new SimpleIdlingResource();
+        }
+        return mIdlingResource;
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -43,20 +75,32 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void tellJoke(View view) {
-    //    new EndpointsAsyncTask().execute(new Pair<Context, String>(this, "Manfred"));
-       startActivity(JokerActivity.newIntent(this, JokerMain.randomJoker()));
+        mIdlingResource.setIdleState(false);
+        new EndpointsAsyncTask(iTestingCallbacks).execute(new Pair<Context, String>(this, "Manfred"));
+        // startActivity(JokerActivity.newIntent(this, JokerMain.randomJoker()));
     }
 
-   /* static class EndpointsAsyncTask extends AsyncTask<Pair<Context, String>, Void, String> {
+    @Override
+    public void play(String result) {
+        tv_request_joker.setText(result);
+        mIdlingResource.setIdleState(true);
+    }
+
+    static class EndpointsAsyncTask extends AsyncTask<Pair<Context, String>, Void, String> {
         private static MyApi myApiService = null;
         private Context context;
+        private ITestingCallbacks iTestingCallbacks;
+
+        public EndpointsAsyncTask(ITestingCallbacks iTestingCallbacks) {
+            this.iTestingCallbacks = iTestingCallbacks;
+        }
 
         @Override
         protected String doInBackground(Pair<Context, String>... params) {
-            if(myApiService == null) {  // Only do this once
+            if (myApiService == null) {  // Only do this once
                 MyApi.Builder builder = new MyApi.Builder(AndroidHttp.newCompatibleTransport(),
                         new AndroidJsonFactory(), null)
-                        .setRootUrl("http://127.0.0.0:8080/_ah/api/")
+                        .setRootUrl("https://ferrous-weaver-255301.appspot.com/_ah/api/")
                         .setGoogleClientRequestInitializer(new GoogleClientRequestInitializer() {
                             @Override
                             public void initialize(AbstractGoogleClientRequest<?> abstractGoogleClientRequest) throws IOException {
@@ -80,9 +124,9 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(String result) {
-            Toast.makeText(context, result, Toast.LENGTH_LONG).show();
+            iTestingCallbacks.play(result);
         }
-    }*/
+    }
 
 
 }
