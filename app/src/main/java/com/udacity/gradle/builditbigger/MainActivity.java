@@ -7,6 +7,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.Nullable;
@@ -15,6 +16,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.util.Pair;
 import androidx.test.espresso.IdlingResource;
 
+import com.google.android.gms.ads.AdListener;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.InterstitialAd;
+import com.google.android.gms.ads.MobileAds;
 import com.google.api.client.extensions.android.http.AndroidHttp;
 import com.google.api.client.extensions.android.json.AndroidJsonFactory;
 import com.google.api.client.googleapis.services.AbstractGoogleClientRequest;
@@ -33,14 +38,38 @@ public class MainActivity extends AppCompatActivity implements ITestingCallbacks
 
     private ITestingCallbacks iTestingCallbacks;
     private TextView tv_request_joker;
+    private ProgressBar pb_loader;
+
+    private InterstitialAd mInterstitialAd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         tv_request_joker = findViewById(R.id.tv_request_joker);
+        pb_loader = findViewById(R.id.pb_loader);
+
         iTestingCallbacks = this;
         getIdlingResource();
+
+        prepaperAD();
+        MobileAds.initialize(this, initializationStatus -> {
+        });
+
+    }
+
+    private void prepaperAD() {
+        mInterstitialAd = new InterstitialAd(this);
+        mInterstitialAd.setAdUnitId("ca-app-pub-3940256099942544/1033173712");
+        mInterstitialAd.loadAd(new AdRequest.Builder().build());
+
+        mInterstitialAd.setAdListener(new AdListener() {
+            @Override
+            public void onAdClosed() {
+                super.onAdClosed();
+                new EndpointsAsyncTask(iTestingCallbacks).execute(new Pair<Context, String>(MainActivity.this, "Manfred"));
+            }
+        });
     }
 
     @VisibleForTesting
@@ -54,34 +83,34 @@ public class MainActivity extends AppCompatActivity implements ITestingCallbacks
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
 
     public void tellJoke(View view) {
+        pb_loader.setVisibility(View.VISIBLE);
         mIdlingResource.setIdleState(false);
-        new EndpointsAsyncTask(iTestingCallbacks).execute(new Pair<Context, String>(this, "Manfred"));
-        // startActivity(JokerActivity.newIntent(this, JokerMain.randomJoker()));
+        if (mInterstitialAd.isLoaded()) {
+            mInterstitialAd.show();
+        } else {
+            Log.d("TAG", "error");
+            prepaperAD();
+            mInterstitialAd.show();
+        }
     }
 
     @Override
     public void play(String result) {
+        pb_loader.setVisibility(View.GONE);
         tv_request_joker.setText(result);
         mIdlingResource.setIdleState(true);
     }
@@ -116,7 +145,7 @@ public class MainActivity extends AppCompatActivity implements ITestingCallbacks
             String name = params[0].second;
 
             try {
-                return myApiService.sayHi(name).execute().getData();
+                return myApiService.randomJoker().execute().getData();
             } catch (IOException e) {
                 return e.getMessage();
             }
@@ -127,6 +156,5 @@ public class MainActivity extends AppCompatActivity implements ITestingCallbacks
             iTestingCallbacks.play(result);
         }
     }
-
 
 }
