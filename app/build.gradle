@@ -50,6 +50,16 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    flavorDimensions"default"
+    productFlavors{
+        free{
+            buildConfigField("String", "KEY_FLAVOR", "\"KEY_FREE\"")
+        }
+        paid{
+            buildConfigField("String", "KEY_FLAVOR", "\"KEY_PAID\"")
+        }
+    }
+
 }
 
 dependencies {
